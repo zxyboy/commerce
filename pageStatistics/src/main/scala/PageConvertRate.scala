@@ -74,6 +74,9 @@ object PageConvertRate {
         writeToMySQL(sparkSession, dataFrame, "tbl_rate0115")
 
 
+        println("测试提交、、")
+        println("测试提交、、")
+
     }
 
     /**
