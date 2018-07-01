@@ -79,6 +79,7 @@ object SessionState {
                 (SortKey(clickCount, orderCount, payCount), fullInfo)
         }.sortByKey(false).take(10)
         top10Map.foreach(println)
+
         val top10RDD = sparkSession.sparkContext.makeRDD(top10Map).map {
             case (sortKey, fullInfo) =>
                 val categoryId = StringUtils.getFieldFromConcatString(fullInfo, "\\|", Constants.FIELD_CATEGORY_ID).toLong
@@ -90,50 +91,50 @@ object SessionState {
         import sparkSession.implicits._
         val dataFrame = top10RDD.toDF()
         top10RDD.foreach(println(_))
-        writeToMySQL(sparkSession, dataFrame, "session_top10")
+        //writeToMySQL(sparkSession, dataFrame, "session_top10")
 
         // 需求四： 求top10热门类别Id的 top10点击的session
 
 
         //整理 top10的categoryId数据 (categoryId,categoryId)
-        val top10CidToCidRDD = top10RDD.map(item => (item.categoryid, item.categoryid))
-
-        //整理过滤以后符合条件的数据
-        // sessionId2FilterRDD => (sessionId,action)
-        // 整理以后： （categoryId,action）
-        val cid2ActionRDD = sessionId2FilteredActionRDD.map {
-            case (sessionId, action) =>
-                //这里是点击的类别id
-                val cid = action.click_category_id
-                (cid, action)
-        }
-        //方式一：
-        // top10CidToCidRDD 和  sessionId2FilteredActionRDD 进行join操作
-        // 得到数据结构： (sessionId + "_" + cid, 1)
-        val cid2JoinActionRDD = top10CidToCidRDD.join(cid2ActionRDD).map {
-            case (cid, (categoryId, action)) =>
-                val sessionId = action.session_id
-                (sessionId + "_" + cid, 1)
-        }
-       val dateFrame1 =  cid2JoinActionRDD.reduceByKey(_+_)
-                .map{
-                    case (seesionIdAndCid,count) =>
-                        val sessionId = seesionIdAndCid.split("_")(0)
-                        val cid = seesionIdAndCid.split("_")(1)
-                        (cid ,(sessionId,count))
-                }.groupByKey()
-                .flatMap{
-                    case (cid,iterableTuple) =>
-                        iterableTuple.toList.
-                            sortWith((x,y)=> x._2 > y._2)
-                            .take(10).map{
-                            case (sessionId,count)=>
-                                Top10Session(uuid,cid.toLong,sessionId,count.toLong)
-                        }
-
-                }.toDF()
-
-        writeToMySQL(sparkSession,dateFrame1,"tbl_sessiontop10_0115")
+        //        val top10CidToCidRDD = top10RDD.map(item => (item.categoryid, item.categoryid))
+        //
+        //        //整理过滤以后符合条件的数据
+        //        // sessionId2FilterRDD => (sessionId,action)
+        //        // 整理以后： （categoryId,action）
+        //        val cid2ActionRDD = sessionId2FilteredActionRDD.map {
+        //            case (sessionId, action) =>
+        //                //这里是点击的类别id
+        //                val cid = action.click_category_id
+        //                (cid, action)
+        //        }
+        //        //方式一：
+        //        // top10CidToCidRDD 和  sessionId2FilteredActionRDD 进行join操作
+        //        // 得到数据结构： (sessionId + "_" + cid, 1)
+        //        val cid2JoinActionRDD = top10CidToCidRDD.join(cid2ActionRDD).map {
+        //            case (cid, (categoryId, action)) =>
+        //                val sessionId = action.session_id
+        //                (sessionId + "_" + cid, 1)
+        //        }
+        //        val dateFrame1 = cid2JoinActionRDD.reduceByKey(_ + _)
+        //            .map {
+        //                case (seesionIdAndCid, count) =>
+        //                    val sessionId = seesionIdAndCid.split("_")(0)
+        //                    val cid = seesionIdAndCid.split("_")(1)
+        //                    (cid, (sessionId, count))
+        //            }.groupByKey()
+        //            .flatMap {
+        //                case (cid, iterableTuple) =>
+        //                    iterableTuple.toList.
+        //                        sortWith((x, y) => x._2 > y._2)
+        //                        .take(10).map {
+        //                        case (sessionId, count) =>
+        //                            Top10Session(uuid, cid.toLong, sessionId, count.toLong)
+        //                    }
+        //
+        //            }.toDF()
+        //
+        //        writeToMySQL(sparkSession, dateFrame1, "tbl_sessiontop10_0115")
 
 
         // cid2JoinGroupActionRDD : （cid, Iterator[action,action,...]）

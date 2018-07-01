@@ -13,7 +13,10 @@ import scala.collection.mutable
 object PageConvertRate {
 
     def main(args: Array[String]): Unit = {
-        val jsonStr  = ConfigurationManager.config.getString(Constants.TASK_PARAMS)
+
+        val jsonStr = ConfigurationManager.config.getString(Constants.TASK_PARAMS)
+
+
         //任务过滤条件
         val taskParam = JSONObject.fromObject(jsonStr)
 
